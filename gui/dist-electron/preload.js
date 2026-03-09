@@ -1,17 +1,1 @@
-"use strict";
-const electron = require("electron");
-const api = {
-  // Convert
-  convert: (opts) => electron.ipcRenderer.invoke("convert:run", opts),
-  // Sync
-  sync: (opts) => electron.ipcRenderer.invoke("sync:run", opts),
-  // Plugins
-  listPlugins: () => electron.ipcRenderer.invoke("plugins:list"),
-  getPluginDetails: (name) => electron.ipcRenderer.invoke("plugins:details", name),
-  // Dialogs
-  openDirectory: () => electron.ipcRenderer.invoke("dialog:openDirectory"),
-  openPath: (path) => electron.ipcRenderer.invoke("shell:openPath", path),
-  // App
-  getVersion: () => electron.ipcRenderer.invoke("app:getVersion")
-};
-electron.contextBridge.exposeInMainWorld("api", api);
+"use strict";const e=require("electron"),i={convert:n=>e.ipcRenderer.invoke("convert:run",n),sync:n=>e.ipcRenderer.invoke("sync:run",n),listPlugins:()=>e.ipcRenderer.invoke("plugins:list"),getPluginDetails:n=>e.ipcRenderer.invoke("plugins:details",n),openDirectory:()=>e.ipcRenderer.invoke("dialog:openDirectory"),openPath:n=>e.ipcRenderer.invoke("shell:openPath",n),getVersion:()=>e.ipcRenderer.invoke("app:getVersion")};e.contextBridge.exposeInMainWorld("api",i);

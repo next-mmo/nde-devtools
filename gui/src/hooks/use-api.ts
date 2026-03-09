@@ -6,7 +6,9 @@ import {
   preferencesCollection,
 } from '../db/collections';
 
-// Plugins — IPC to main process
+const isElectron = !!window.api;
+
+// Plugins — IPC or HTTP
 export function usePlugins() {
   return {
     data: [] as Array<{
@@ -20,7 +22,7 @@ export function usePlugins() {
   };
 }
 
-// Convert — IPC to main process
+// Convert — IPC to main process, or HTTP to Vite API server
 export function useConvert() {
   return useMutation({
     mutationFn: async (opts: {
@@ -30,11 +32,13 @@ export function useConvert() {
       agentMode: string;
       permissions: string;
     }) => {
-      if (window.api) {
+      const pluginName = opts.source.split(/[\\/]/).pop() || opts.source;
+
+      if (isElectron) {
         const results = await window.api.convert(opts);
         for (const r of results) {
           addConversion({
-            pluginName: opts.source.split(/[\\/]/).pop() || opts.source,
+            pluginName,
             target: r.target,
             outputPath: opts.output,
             filesCreated: 0,
@@ -44,12 +48,32 @@ export function useConvert() {
         }
         return results;
       }
-      throw new Error('Electron API not available');
+
+      // Browser — call Vite API server
+      const res = await fetch('/api/convert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(opts),
+      });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const results = await res.json();
+
+      for (const r of results) {
+        addConversion({
+          pluginName,
+          target: r.target,
+          outputPath: opts.output,
+          filesCreated: 0,
+          status: r.status as 'success' | 'error',
+          error: r.error,
+        });
+      }
+      return results;
     },
   });
 }
 
-// Sync — IPC to main process
+// Sync — IPC to main process, or HTTP to Vite API server
 export function useSync() {
   return useMutation({
     mutationFn: async (opts: {
@@ -57,7 +81,7 @@ export function useSync() {
       output?: string;
       claudeHome?: string;
     }) => {
-      if (window.api) {
+      if (isElectron) {
         const result = await window.api.sync(opts);
         addConversion({
           pluginName: '~/.claude',
@@ -69,7 +93,25 @@ export function useSync() {
         });
         return result;
       }
-      throw new Error('Electron API not available');
+
+      // Browser — call Vite API server
+      const res = await fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(opts),
+      });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const result = await res.json();
+
+      addConversion({
+        pluginName: '~/.claude',
+        target: opts.target,
+        outputPath: opts.output || '~/',
+        filesCreated: 0,
+        status: result.status as 'success' | 'error',
+        error: result.error,
+      });
+      return result;
     },
   });
 }

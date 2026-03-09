@@ -6,9 +6,18 @@ todos/
 .worktrees
 coverage/
 dist/
+dist-electron/
 *.tsbuildinfo
 .env
 .env.*
+
+# Electron builder output
+gui/release/
+gui/dist/
+
+# Playwright test output
+gui/test-results/
+gui/playwright-report/
 
 # AI coding tool output (auto-added by nde-devtools)
 .gemini/antigravity/

@@ -8,6 +8,7 @@ import { targets, validateScope } from '../targets';
 import { ensureCodexAgentsFile } from '../utils/codex-agents';
 import { detectInstalledTools } from '../utils/detect-tools';
 import { pathExists } from '../utils/files';
+import { ensureGitignore } from '../utils/gitignore';
 import { expandHome, resolveTargetHome } from '../utils/resolve-home';
 import { resolveTargetOutputRoot } from '../utils/resolve-output';
 
@@ -173,6 +174,7 @@ export default defineCommand({
             hasExplicitOutput,
           });
           await handler.write(root, bundle);
+          await ensureGitignore(outputRoot, tool.name);
           console.log(
             `Installed ${plugin.manifest.name} to ${tool.name} at ${root}`,
           );
@@ -217,6 +219,7 @@ export default defineCommand({
         scope: resolvedScope,
       });
       await target.write(primaryOutputRoot, bundle, resolvedScope);
+      await ensureGitignore(outputRoot, targetName);
       console.log(`Installed ${plugin.manifest.name} to ${primaryOutputRoot}`);
 
       const extraTargets = parseExtraTargets(args.also);
@@ -249,6 +252,7 @@ export default defineCommand({
           scope: handler.defaultScope,
         });
         await handler.write(extraRoot, extraBundle, handler.defaultScope);
+        await ensureGitignore(outputRoot, extra);
         console.log(`Installed ${plugin.manifest.name} to ${extraRoot}`);
       }
 

@@ -9,3 +9,6 @@ dist/
 *.tsbuildinfo
 .env
 .env.*
+
+# AI coding tool output (auto-added by nde-devtools)
+.gemini/antigravity/

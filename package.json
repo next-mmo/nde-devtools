@@ -1,9 +1,7 @@
 {
   "name": "@nde/devtools",
   "version": "1.0.0",
-  "private": false,
-  "homepage": "https://github.com/EveryInc/compound-engineering-plugin",
-  "repository": "https://github.com/EveryInc/compound-engineering-plugin",
+  "private": true,
   "type": "module",
   "bin": {
     "compound-plugin": "src/index.ts"
@@ -13,7 +11,6 @@
     "convert": "tsx src/index.ts convert",
     "dev": "tsx src/index.ts",
     "list": "tsx src/index.ts list",
-    "release:dry-run": "semantic-release --dry-run",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -22,14 +19,8 @@
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/git": "^10.0.1",
     "@types/node": "^22.0.0",
-    "semantic-release": "^25.0.3",
     "tsx": "^4.19.0",
     "vitest": "^3.0.0"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

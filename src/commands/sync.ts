@@ -1,88 +1,112 @@
-import { defineCommand } from "citty"
-import path from "path"
-import { loadClaudeHome } from "../parsers/claude-home"
+import { defineCommand } from 'citty';
+import path from 'path';
+import { loadClaudeHome } from '../parsers/claude-home';
 import {
+  type SyncTargetName,
   getDefaultSyncRegistryContext,
   getSyncTarget,
   isSyncTargetName,
   syncTargetNames,
-  type SyncTargetName,
-} from "../sync/registry"
-import { expandHome } from "../utils/resolve-home"
-import { hasPotentialSecrets } from "../utils/secrets"
-import { detectInstalledTools } from "../utils/detect-tools"
+} from '../sync/registry';
+import { detectInstalledTools } from '../utils/detect-tools';
+import { ensureGitignore } from '../utils/gitignore';
+import { expandHome } from '../utils/resolve-home';
+import { hasPotentialSecrets } from '../utils/secrets';
 
-const validTargets = [...syncTargetNames, "all"] as const
-type SyncTarget = SyncTargetName | "all"
+const validTargets = [...syncTargetNames, 'all'] as const;
+type SyncTarget = SyncTargetName | 'all';
 
 function isValidTarget(value: string): value is SyncTarget {
-  return value === "all" || isSyncTargetName(value)
+  return value === 'all' || isSyncTargetName(value);
 }
 
 export default defineCommand({
   meta: {
-    name: "sync",
-    description: "Sync Claude Code config (~/.claude/) to supported provider configs and skills",
+    name: 'sync',
+    description:
+      'Sync Claude Code config (~/.claude/) to supported provider configs and skills',
   },
   args: {
     target: {
-      type: "string",
-      default: "all",
-      description: `Target: ${syncTargetNames.join(" | ")} | all (default: all)`,
+      type: 'string',
+      default: 'all',
+      description: `Target: ${syncTargetNames.join(' | ')} | all (default: all)`,
     },
     claudeHome: {
-      type: "string",
-      alias: "claude-home",
-      description: "Path to Claude home (default: ~/.claude)",
+      type: 'string',
+      alias: 'claude-home',
+      description: 'Path to Claude home (default: ~/.claude)',
+    },
+    output: {
+      type: 'string',
+      alias: 'o',
+      description:
+        'Output directory (project root). When set, sync writes to this path instead of the global home directory.',
     },
   },
   async run({ args }) {
     if (!isValidTarget(args.target)) {
-      throw new Error(`Unknown target: ${args.target}. Use one of: ${validTargets.join(", ")}`)
+      throw new Error(
+        `Unknown target: ${args.target}. Use one of: ${validTargets.join(', ')}`,
+      );
     }
 
-    const { home, cwd } = getDefaultSyncRegistryContext()
-    const claudeHome = expandHome(args.claudeHome ?? path.join(home, ".claude"))
-    const config = await loadClaudeHome(claudeHome)
+    const { home, cwd } = getDefaultSyncRegistryContext();
+    const claudeHome = expandHome(
+      args.claudeHome ?? path.join(home, '.claude'),
+    );
+    const config = await loadClaudeHome(claudeHome);
+    const explicitOutput = args.output
+      ? path.resolve(expandHome(String(args.output).trim()))
+      : undefined;
 
     // Warn about potential secrets in MCP env vars
     if (hasPotentialSecrets(config.mcpServers)) {
       console.warn(
-        "⚠️  Warning: MCP servers contain env vars that may include secrets (API keys, tokens).\n" +
-        "   These will be copied to the target config. Review before sharing the config file.",
-      )
+        '⚠️  Warning: MCP servers contain env vars that may include secrets (API keys, tokens).\n' +
+          '   These will be copied to the target config. Review before sharing the config file.',
+      );
     }
 
-    if (args.target === "all") {
-      const detected = await detectInstalledTools()
-      const activeTargets = detected.filter((t) => t.detected).map((t) => t.name)
+    if (args.target === 'all') {
+      const detected = await detectInstalledTools();
+      const activeTargets = detected
+        .filter((t) => t.detected)
+        .map((t) => t.name);
 
       if (activeTargets.length === 0) {
-        console.log("No AI coding tools detected.")
-        return
+        console.log('No AI coding tools detected.');
+        return;
       }
 
-      console.log(`Syncing to ${activeTargets.length} detected tool(s)...`)
+      console.log(`Syncing to ${activeTargets.length} detected tool(s)...`);
       for (const tool of detected) {
-        console.log(`  ${tool.detected ? "✓" : "✗"} ${tool.name} — ${tool.reason}`)
+        console.log(
+          `  ${tool.detected ? '✓' : '✗'} ${tool.name} — ${tool.reason}`,
+        );
       }
 
       for (const name of activeTargets) {
-        const target = getSyncTarget(name as SyncTargetName)
-        const outputRoot = target.resolveOutputRoot(home, cwd)
-        await target.sync(config, outputRoot)
-        console.log(`✓ Synced to ${name}: ${outputRoot}`)
+        const target = getSyncTarget(name as SyncTargetName);
+        const outputRoot =
+          explicitOutput ?? target.resolveOutputRoot(home, cwd);
+        await target.sync(config, outputRoot);
+        if (explicitOutput)
+          await ensureGitignore(explicitOutput, name as string);
+        console.log(`✓ Synced to ${name}: ${outputRoot}`);
       }
-      return
+      return;
     }
 
     console.log(
       `Syncing ${config.skills.length} skills, ${config.commands?.length ?? 0} commands, ${Object.keys(config.mcpServers).length} MCP servers...`,
-    )
+    );
 
-    const target = getSyncTarget(args.target as SyncTargetName)
-    const outputRoot = target.resolveOutputRoot(home, cwd)
-    await target.sync(config, outputRoot)
-    console.log(`✓ Synced to ${args.target}: ${outputRoot}`)
+    const target = getSyncTarget(args.target as SyncTargetName);
+    const outputRoot = explicitOutput ?? target.resolveOutputRoot(home, cwd);
+    await target.sync(config, outputRoot);
+    if (explicitOutput)
+      await ensureGitignore(explicitOutput, args.target as string);
+    console.log(`✓ Synced to ${args.target}: ${outputRoot}`);
   },
-})
+});

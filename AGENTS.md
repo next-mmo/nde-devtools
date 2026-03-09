@@ -7,9 +7,9 @@ This repository contains a TypeScript CLI that converts Claude Code plugins into
 - **Branching:** Create a feature branch for any non-trivial change. If already on the correct branch for the task, keep using it; do not create additional branches or worktrees unless explicitly requested.
 - **Safety:** Do not delete or overwrite user data. Avoid destructive commands.
 - **Testing:** Run `pnpm test` after changes that affect parsing, conversion, or output.
-- **Release versioning:** The root CLI package (`package.json`, `CHANGELOG.md`, and repo `v*` tags) uses one shared release line managed by semantic-release on `main`. Do not start or maintain a separate root CLI version stream. Use conventional commits and let release automation write the next root package version. Keep the root changelog header block in sync with `.releaserc.json` `changelogTitle` so generated release entries stay under the header. Embedded marketplace plugin metadata (`plugins/compound-engineering/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`) is a separate version surface and may differ.
 - **Output Paths:** Keep OpenCode output at `opencode.json` and `.opencode/{agents,skills,plugins}`. For OpenCode, command go to `~/.config/opencode/commands/<name>.md`; `opencode.json` is deep-merged (never overwritten wholesale).
 - **ASCII-first:** Use ASCII unless the file already contains Unicode.
+- **Local-only:** This tool is not published to npm. Users clone the repo and run locally via `pnpm tsx src/index.ts`.
 
 ## Adding a New Target Provider (e.g., Codex)
 
@@ -43,7 +43,7 @@ Add a new provider when at least one of these is true:
 
 - A real user/workflow needs it now.
 - The target format is stable and documented.
-- There’s a clear mapping for tools/permissions/hooks.
+- There's a clear mapping for tools/permissions/hooks.
 - You can write fixtures + tests that validate the mapping.
 
 Avoid adding a provider if the target spec is unstable or undocumented.

@@ -61,14 +61,14 @@ export function resolveTargetOutputRoot(options: {
     return path.join(home, pluginName ?? 'plugin');
   }
   if (targetName === 'antigravity') {
-    const base =
-      antigravityHome ??
-      path.join(
-        hasExplicitOutput ? outputRoot : process.cwd(),
-        '.gemini',
-        'antigravity',
-      );
-    return base;
+    if (
+      antigravityHome &&
+      antigravityHome !== path.join(os.homedir(), '.gemini', 'antigravity')
+    ) {
+      return antigravityHome;
+    }
+    const base = hasExplicitOutput ? outputRoot : process.cwd();
+    return path.join(base, '.gemini', 'antigravity');
   }
   return outputRoot;
 }
